@@ -1,7 +1,13 @@
 /* eslint-disable jsx-a11y/alt-text */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlphaBetaAI, D0PieceProfitAI, D1PieceProfitAI, D2PieceProfitAI, MCTS, MiniMaxAI, RandomAI } from "scripts/AI";
-import { Board, TeamType } from "scripts/chess";
+import AlphaBetaAI from "scripts/ai/AlphaBetaAI";
+import D0PieceProfitAI from "scripts/ai/D0PieceProfitAI";
+import { D1PieceProfitAI } from "scripts/ai/D1PieceProfitAI";
+import MCTS from "scripts/ai/MCTSAI";
+import MiniMaxAI from "scripts/ai/MiniMaxAI";
+import RandomAI from "scripts/ai/RandomAI";
+import Board from "scripts/chess/board";
+import { PieceType, TeamType } from "scripts/chess/types";
 import JsxUtil from "utils/JsxUtil";
 
 const AI_LIST = {
@@ -42,8 +48,11 @@ function App() {
   const [blackAI, setBlackAI] = useState(null);
   const [whiteAI, setWhiteAI] = useState(null);
 
-  const [whiteAdvantageMap, setWhiteAdvantageMap] = useState(null);
   const [blackAdvantageMap, setBlackAdvantageMap] = useState(null);
+  const [whiteAdvantageMap, setWhiteAdvantageMap] = useState(null);
+
+  const isBlackKingThreatened = useMemo(() => board.isKingThreatened(TeamType.BLACK), [turn]);
+  const isWhiteKingThreatened = useMemo(() => board.isKingThreatened(TeamType.WHITE), [turn]);
 
   const blackPieceValue = useMemo(() => board.getTeamPieceValue(TeamType.BLACK));
   const whitePieceValue = useMemo(() => board.getTeamPieceValue(TeamType.WHITE));
@@ -88,6 +97,8 @@ function App() {
     });
   }, [userMove, whiteAI, blackAI]);
 
+  // console.log(whiteAI, blackAI);
+
   const doNextTurn = useCallback(async () => {
     if (gameOver) return;
 
@@ -107,10 +118,10 @@ function App() {
         .fill(null)
         .map(() => Array(8).fill(null));
       moves.forEach((m) => {
-        const { x, y, profit } = m;
+        const { ox, oy, x, y, profit } = m;
         map[x] = map[x] ?? [];
-        if (map[x][y] != null) map[x][y] = Math.max(map[x][y], profit);
-        map[x][y] = profit;
+        const newProfit = map[x][y] != null ? Math.max(map[x][y].profit, profit) : profit;
+        map[x][y] = { type: board.getPiece(ox, oy)?.getChar(), profit: newProfit };
       });
       if (currentTurn === TeamType.WHITE) {
         setWhiteAdvantageMap(map);
@@ -196,6 +207,7 @@ function App() {
   }, [board, currentTurn, forceUpdate, settingDone, whiteAI, blackAI, doNextTurn, autoMode]);
 
   // console.log(whiteAI, blackAI, isPlayerTurn);
+  // console.log(isBlackKingThreatened, isWhiteKingThreatened);
 
   return (
     <div className="app">
@@ -219,6 +231,9 @@ function App() {
                   const moving = userHandlePiece != null && userHandlePiece.x === i && userHandlePiece.y === j;
                   const targeting = targetHandlePos != null && targetHandlePos.x === i && targetHandlePos.y === j;
                   const targetExists = board.getPiece(i, j) != null;
+                  const isThreatened =
+                    piece?.type === PieceType.KING &&
+                    (piece.team === TeamType.WHITE ? isWhiteKingThreatened : isBlackKingThreatened);
 
                   return (
                     <div
@@ -229,7 +244,8 @@ function App() {
                         JsxUtil.classByCondition(beforePos && userHandlePiece == null, "before") +
                         JsxUtil.classByCondition(afterPos && userHandlePiece == null, "after") +
                         JsxUtil.classByCondition(moving, "moving") +
-                        JsxUtil.classByCondition(targeting, "targeting")
+                        JsxUtil.classByCondition(targeting, "targeting") +
+                        JsxUtil.classByCondition(isThreatened, "threatened")
                       }
                       onDragOver={(e) => {
                         e.preventDefault();
@@ -280,9 +296,20 @@ function App() {
                           className={"targetable-overlay" + JsxUtil.classByCondition(targetExists, "killable")}
                         ></div>
                       )}
+                      <div className="coordinate">{`(${i},${j})`}</div>
                       <div className="advantages">
-                        <div className="advantage white">{whiteAdvantageMap?.[i]?.[j] ?? "-"}</div>
-                        <div className="advantage black">{blackAdvantageMap?.[i]?.[j] ?? "-"}</div>
+                        {whiteAI != null && (
+                          <div className="advantage white">
+                            {whiteAdvantageMap?.[i]?.[j]?.type ?? ""}
+                            {whiteAdvantageMap?.[i]?.[j]?.profit ?? "-"}
+                          </div>
+                        )}
+                        {blackAI != null && (
+                          <div className="advantage black">
+                            {blackAdvantageMap?.[i]?.[j]?.type ?? ""}
+                            {blackAdvantageMap?.[i]?.[j]?.profit ?? "-"}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
