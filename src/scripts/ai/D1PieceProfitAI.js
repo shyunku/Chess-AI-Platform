@@ -35,18 +35,21 @@ export class D1PieceProfitAI extends AI {
       for (const d2Move of d2Moves) {
         const d2TempBoard = tempBoard.copy();
         d2TempBoard.movePiece(d2Move);
-        d2Move.d2profit = d2TempBoard.getTeamPieceValue(opponentTeam) - d2TempBoard.getTeamPieceValue(currentTeam);
+        d2Move.profit = this.getAdvantage(d2TempBoard, opponentTeam);
       }
 
       // suppose the opponent will make the best move
-      d2Moves.sort((a, b) => b.d2profit - a.d2profit);
-      move.profit = -d2Moves[0].d2profit;
-      // console.log(move, d2Moves);
+      d2Moves.sort((a, b) => b.profit - a.profit);
+      const oppBestMove = d2Moves[0];
+      move.profit = -oppBestMove.profit;
+      move.oppMoves = d2Moves;
+      console.log(move, d2Moves);
     }
 
     availableMoves.sort((a, b) => b.profit - a.profit);
     const bestMoves = availableMoves.filter((move) => move.profit === availableMoves[0].profit);
-    const bestMovePick = Math.floor(Math.random() * bestMoves.length);
-    return { move: bestMoves[bestMovePick], moves: availableMoves };
+    const bestMovePick = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+    console.log(bestMovePick, bestMovePick.oppMoves);
+    return { move: bestMovePick, moves: availableMoves };
   }
 }

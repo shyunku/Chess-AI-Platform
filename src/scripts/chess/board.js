@@ -11,13 +11,21 @@ export default class Board {
       this.board[i] = new Array(8);
     }
     this.notations = [];
-    this.reset();
 
     this.id = Board.id++;
+    this.onChange = null;
+    this.turn = TeamType.WHITE;
+
+    this.reset();
   }
 
   isCanonical() {
     return this.id === 0;
+  }
+
+  onChangeCallback(callback) {
+    if (!this.isCanonical()) return;
+    this.onChange = callback;
   }
 
   reset() {
@@ -49,6 +57,8 @@ export default class Board {
     this.board[7][5] = new Bishop(TeamType.WHITE, 7, 5);
     this.board[7][6] = new Knight(TeamType.WHITE, 7, 6);
     this.board[7][7] = new Rook(TeamType.WHITE, 7, 7);
+
+    this.turn = TeamType.WHITE;
   }
 
   copy() {
@@ -87,6 +97,7 @@ export default class Board {
       }
     }
     newBoard.notations = [...this.notations];
+    newBoard.turn = this.turn;
     return newBoard;
   }
 
@@ -166,24 +177,22 @@ export default class Board {
    * @returns
    */
   movePiece(move, withoutNotation = false) {
-    const piece = this.getPiece(move.ox, move.oy);
+    let piece = this.getPiece(move.ox, move.oy);
     if (piece == null) {
-      console.log("piece", piece);
+      console.log("piece", piece, "move", move);
       this.draw();
       throw new Error("Invalid move");
     }
 
+    if (piece.team !== this.turn) {
+      console.error(`[${this.id}] Current turn is ${this.turn} but ${piece.team} is moving`, move);
+      this.draw();
+      throw new Error("Opponent move");
+    }
+
     // check promotion
-    if (this.isCanonical())
-      console.log(
-        "promotion check",
-        piece,
-        move,
-        piece.type === PieceType.PAWN,
-        piece.team === TeamType.WHITE ? piece.x === 0 : piece.x === 7
-      );
     if (piece.type === PieceType.PAWN && (piece.team === TeamType.WHITE ? move.x === 0 : move.x === 7)) {
-      piece.type = PieceType.QUEEN;
+      piece = new Queen(piece.team, move.x, move.y, piece.moved);
       if (this.isCanonical()) {
         console.log("promotion", piece.type, piece.x, piece.y, move);
       }
@@ -220,13 +229,25 @@ export default class Board {
     }
 
     const notation = this.getNotation(originalPiece, targetPiece, move.x, move.y, { isCastling });
+    const opponentTeam = piece.team === TeamType.WHITE ? TeamType.BLACK : TeamType.WHITE;
+
+    const defer = () => {
+      if (this.isCanonical()) console.log("invoke onchange");
+      this.onChange?.(opponentTeam);
+      this.turn = opponentTeam;
+    };
 
     // add notation
     if (!withoutNotation) {
       const payload = this.export();
       this.notations.push({ notation, payload, move, teamTurn: piece.team, killed: targetPiece });
+
+      defer();
       return notation;
     }
+
+    defer();
+    return null;
   }
 
   getTeamPieces(team) {
@@ -289,7 +310,7 @@ export default class Board {
     for (const piece of pieces) {
       const moves = tempBoard.getAvailableMoves(piece, true);
       for (const move of moves) {
-        console.log(move);
+        // console.log(move);
         tempBoard.movePiece(move, true);
         const isCheck = tempBoard.isCheck(team);
         if (!isCheck) {
@@ -327,33 +348,35 @@ export default class Board {
   }
 
   isGameOver() {
-    const whitePieces = this.getTeamPieces(TeamType.WHITE);
-    const blackPieces = this.getTeamPieces(TeamType.BLACK);
+    if (this.turn === TeamType.WHITE) {
+      const whitePieces = this.getTeamPieces(TeamType.WHITE);
+      if (whitePieces.length === 0) {
+        return { team: TeamType.BLACK, reason: "whiteAllDead" };
+      }
 
-    if (whitePieces.length === 0) {
-      return { team: TeamType.BLACK, reason: "whiteAllDead" };
-    }
-    if (blackPieces.length === 0) {
-      return { team: TeamType.WHITE, reason: "blackAllDead" };
-    }
+      if (whitePieces.filter((piece) => piece.type === PieceType.KING).length === 0) {
+        return { team: TeamType.BLACK, reason: "whiteKingDead" };
+      }
 
-    if (whitePieces.filter((piece) => piece.type === PieceType.KING).length === 0) {
-      return { team: TeamType.BLACK, reason: "whiteKingDead" };
-    }
-    if (blackPieces.filter((piece) => piece.type === PieceType.KING).length === 0) {
-      return { team: TeamType.WHITE, reason: "blackKingDead" };
-    }
+      const whiteCheckMate = this.isCheckMate(TeamType.WHITE);
+      if (whiteCheckMate) {
+        return { team: TeamType.BLACK, reason: "whiteCheckMate" };
+      }
+    } else {
+      const blackPieces = this.getTeamPieces(TeamType.BLACK);
+      if (blackPieces.length === 0) {
+        return { team: TeamType.WHITE, reason: "blackAllDead" };
+      }
 
-    const whiteCheckMate = this.isCheckMate(TeamType.WHITE);
-    const blackCheckMate = this.isCheckMate(TeamType.BLACK);
+      if (blackPieces.filter((piece) => piece.type === PieceType.KING).length === 0) {
+        return { team: TeamType.WHITE, reason: "blackKingDead" };
+      }
 
-    if (whiteCheckMate) {
-      return { team: TeamType.BLACK, reason: "whiteCheckMate" };
+      const blackCheckMate = this.isCheckMate(TeamType.BLACK);
+      if (blackCheckMate) {
+        return { team: TeamType.WHITE, reason: "blackCheckMate" };
+      }
     }
-    if (blackCheckMate) {
-      return { team: TeamType.WHITE, reason: "blackCheckMate" };
-    }
-
     return null;
   }
 

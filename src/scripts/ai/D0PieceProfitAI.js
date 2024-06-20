@@ -13,7 +13,6 @@ export default class D0PieceProfitAI extends AI {
    * @returns {Move} move
    */
   getMove(board, currentTeam) {
-    const opponentTeam = currentTeam === TeamType.WHITE ? TeamType.BLACK : TeamType.WHITE;
     const availablePieces = board.getTeamPieces(currentTeam);
     const availableMoves = [];
     for (const piece of availablePieces) {
@@ -24,7 +23,7 @@ export default class D0PieceProfitAI extends AI {
     for (const move of availableMoves) {
       const tempBoard = board.copy();
       tempBoard.movePiece(move);
-      move.profit = tempBoard.getTeamPieceValue(currentTeam) - tempBoard.getTeamPieceValue(opponentTeam);
+      move.profit = this.getAdvantage(tempBoard, currentTeam);
     }
 
     availableMoves.sort((a, b) => b.profit - a.profit);

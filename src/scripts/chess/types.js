@@ -38,3 +38,5 @@ export const TeamType = {
   WHITE: "WHITE",
   BLACK: "BLACK",
 };
+
+export const getOpponentTeam = (team) => (team === TeamType.WHITE ? TeamType.BLACK : TeamType.WHITE);

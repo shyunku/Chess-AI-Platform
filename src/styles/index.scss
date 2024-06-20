@@ -10,6 +10,7 @@ body,
   width: 100%;
   height: 100%;
   font-family: "Oswald", sans-serif;
+  overflow: hidden;
 }
 
 .app {
@@ -52,6 +53,27 @@ body,
       flex-direction: column;
       border: 4px solid black;
       user-select: none;
+      transition: 0.5s ease;
+      background-color: rgb(155, 215, 161);
+
+      &.rotated {
+        transform: rotate(180deg);
+
+        .square {
+          transform: rotate(180deg);
+
+          // .x-label {
+          //   top: calc(800% + 12px);
+          //   bottom: auto;
+          // }
+
+          // .y-label {
+          //   left: auto;
+          //   right: calc(700% + 2px);
+          //   z-index: 6;
+          // }
+        }
+      }
 
       .row {
         display: flex;
@@ -64,10 +86,15 @@ body,
           width: 110px;
           height: 110px;
           position: relative;
-          transition: 0.2s ease;
+          transition: 0.15s ease;
+          z-index: 3;
 
           &.black {
-            background-color: rgb(68, 189, 78);
+            background-color: rgb(74, 200, 85);
+          }
+
+          &:hover {
+            background-color: rgb(158, 145, 199);
           }
 
           &.before,
@@ -118,6 +145,11 @@ body,
             font-size: 20px;
             font-weight: bold;
             color: gray;
+            pointer-events: none;
+
+            &.hovered {
+              color: rgb(198, 132, 255);
+            }
           }
 
           .y-label {
@@ -162,7 +194,7 @@ body,
             align-items: left;
             left: 0;
             top: 0;
-            font-size: 11px;
+            font-size: 14px;
             opacity: 0.3;
           }
 
@@ -184,6 +216,11 @@ body,
               display: flex;
               justify-content: right;
               font-size: 11px;
+              padding: 1px 2px;
+
+              &:not(:last-child) {
+                margin-bottom: 2px;
+              }
 
               &.white {
                 color: white;
@@ -192,6 +229,10 @@ body,
               &.black {
                 color: black;
                 text-shadow: 0 0 3px rgba(255, 255, 255, 1);
+              }
+
+              &.optimal {
+                background-color: rgb(240, 62, 62);
               }
             }
           }
@@ -288,6 +329,11 @@ body,
       align-items: center;
       margin-top: 30px;
       width: 300px;
+
+      &.disabled .col {
+        opacity: 0.5;
+        pointer-events: none;
+      }
 
       .title {
         font-weight: bold;

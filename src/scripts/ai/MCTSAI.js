@@ -3,7 +3,7 @@ import AI from "./AI";
 
 // MCTS 는 몬테카를로 트리 탐색 알고리즘을 사용하여 최적의 수를 계산하는 AI입니다.
 export default class MCTS extends AI {
-  constructor(iteration = 5) {
+  constructor(iteration = 12) {
     super(`MCTS (iteration: ${iteration})`);
     this.iteration = iteration;
     this.me = null;

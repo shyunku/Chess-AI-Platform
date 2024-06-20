@@ -1,5 +1,5 @@
 const { Move } = require("./objects");
-const { PieceType, TeamType, PieceChar, PieceSymbol } = require("./types");
+const { PieceType, TeamType, PieceChar, PieceSymbol, getOpponentTeam } = require("./types");
 
 export class Piece {
   constructor(team, type, x, y, moved = 0) {
@@ -36,6 +36,30 @@ export class Piece {
       return false;
     }
     return true;
+  }
+
+  getPiecesCanAttackThis(board) {
+    let attackables = [];
+    const opponentTeam = getOpponentTeam(this.team);
+    const pieces = board.getTeamPieces(opponentTeam);
+    for (const piece of pieces) {
+      if (piece.movable(board, this.x, this.y, false)) {
+        attackables.push(piece);
+      }
+    }
+    return attackables;
+  }
+
+  getPiecesCanAttackTo(board) {
+    let attackables = [];
+    const opponentTeam = getOpponentTeam(this.team);
+    const pieces = board.getTeamPieces(opponentTeam);
+    for (const piece of pieces) {
+      if (this.movable(board, piece.x, piece.y, false)) {
+        attackables.push(piece);
+      }
+    }
+    return attackables;
   }
 
   getChar() {
