@@ -191,8 +191,10 @@ export default class Board {
     }
 
     // check promotion
+    let promotion = false;
     if (piece.type === PieceType.PAWN && (piece.team === TeamType.WHITE ? move.x === 0 : move.x === 7)) {
       piece = new Queen(piece.team, move.x, move.y, piece.moved);
+      promotion = true;
       if (this.isCanonical()) {
         console.log("promotion", piece.type, piece.x, piece.y, move);
       }
@@ -228,7 +230,10 @@ export default class Board {
       }
     }
 
-    const notation = this.getNotation(originalPiece, targetPiece, move.x, move.y, { isCastling });
+    const notation = this.getNotation(originalPiece, targetPiece, move.x, move.y, {
+      isCastling,
+      isPromotion: promotion,
+    });
     const opponentTeam = piece.team === TeamType.WHITE ? TeamType.BLACK : TeamType.WHITE;
 
     const defer = () => {
@@ -267,7 +272,7 @@ export default class Board {
     return this.board[x][y] ?? null;
   }
 
-  getNotation(piece, targetPiece, moveX, moveY, opt = { isCastling: false }) {
+  getNotation(piece, targetPiece, moveX, moveY, opt = { isCastling: false, isPromotion: false }) {
     if (opt.isCastling) {
       return "O-O";
     }
@@ -281,6 +286,9 @@ export default class Board {
     }
     notation += String.fromCharCode(97 + moveY);
     notation += 8 - moveX;
+    if (opt.isPromotion) {
+      notation += "=Q";
+    }
     return notation;
   }
 
